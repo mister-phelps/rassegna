@@ -1,0 +1,327 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Rassegna — European Press Review</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --ink:       #1a1a1a;
+      --ink-light: #444;
+      --rule:      #c8b99a;
+      --paper:     #faf8f4;
+      --card:      #fff;
+      --accent:    #b5341c;
+      --accent-bg: #fdf0ee;
+      --tag-bg:    #f0ece4;
+      --shadow:    0 1px 4px rgba(0,0,0,.08);
+      --radius:    4px;
+      --serif:     'Georgia', 'Times New Roman', serif;
+      --sans:      'Helvetica Neue', Arial, sans-serif;
+      --max:       860px;
+    }
+
+    body {
+      background: var(--paper);
+      color: var(--ink);
+      font-family: var(--serif);
+      font-size: 17px;
+      line-height: 1.65;
+      min-height: 100vh;
+    }
+
+    /* ── Masthead ── */
+    .masthead {
+      border-bottom: 3px double var(--ink);
+      padding: 28px 24px 18px;
+      text-align: center;
+      max-width: var(--max);
+      margin: 0 auto;
+    }
+
+    .masthead-label {
+      font-family: var(--sans);
+      font-size: 10px;
+      letter-spacing: .2em;
+      text-transform: uppercase;
+      color: var(--ink-light);
+      margin-bottom: 6px;
+    }
+
+    .masthead h1 {
+      font-size: clamp(2.8rem, 8vw, 4.8rem);
+      font-weight: 700;
+      letter-spacing: -.02em;
+      line-height: 1;
+      font-style: italic;
+    }
+
+    .masthead-tagline {
+      font-family: var(--sans);
+      font-size: 11px;
+      letter-spacing: .18em;
+      text-transform: uppercase;
+      color: var(--ink-light);
+      margin-top: 8px;
+    }
+
+    /* ── Date bar ── */
+    .datebar {
+      max-width: var(--max);
+      margin: 0 auto;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 10px 24px;
+      border-bottom: 1px solid var(--rule);
+      font-family: var(--sans);
+      font-size: 12px;
+      color: var(--ink-light);
+    }
+
+    .datebar .edition-date {
+      font-weight: 600;
+      color: var(--ink);
+      font-size: 13px;
+    }
+
+    /* ── Main content ── */
+    main {
+      max-width: var(--max);
+      margin: 0 auto;
+      padding: 32px 24px 64px;
+    }
+
+    /* ── Section heading ── */
+    .section-heading {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      margin-bottom: 24px;
+    }
+
+    .section-heading::before,
+    .section-heading::after {
+      content: '';
+      flex: 1;
+      height: 1px;
+      background: var(--rule);
+    }
+
+    .section-heading span {
+      font-family: var(--sans);
+      font-size: 10px;
+      letter-spacing: .2em;
+      text-transform: uppercase;
+      color: var(--ink-light);
+      white-space: nowrap;
+    }
+
+    /* ── Article cards ── */
+    .articles {
+      display: grid;
+      gap: 20px;
+    }
+
+    .card {
+      background: var(--card);
+      border: 1px solid #e6e0d4;
+      border-radius: var(--radius);
+      box-shadow: var(--shadow);
+      padding: 24px 28px;
+      transition: box-shadow .15s;
+    }
+
+    .card:hover {
+      box-shadow: 0 3px 12px rgba(0,0,0,.12);
+    }
+
+    .card-meta {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      flex-wrap: wrap;
+      margin-bottom: 12px;
+    }
+
+    .source-badge {
+      font-family: var(--sans);
+      font-size: 10px;
+      font-weight: 700;
+      letter-spacing: .08em;
+      text-transform: uppercase;
+      background: var(--ink);
+      color: #fff;
+      padding: 2px 8px;
+      border-radius: 2px;
+    }
+
+    .topic-tag {
+      font-family: var(--sans);
+      font-size: 10px;
+      font-weight: 600;
+      letter-spacing: .06em;
+      text-transform: uppercase;
+      background: var(--tag-bg);
+      color: var(--accent);
+      border: 1px solid var(--rule);
+      padding: 2px 8px;
+      border-radius: 2px;
+    }
+
+    .card h2 {
+      font-size: 1.18rem;
+      font-weight: 700;
+      line-height: 1.35;
+      margin-bottom: 10px;
+    }
+
+    .card h2 a {
+      color: inherit;
+      text-decoration: none;
+    }
+
+    .card h2 a:hover {
+      text-decoration: underline;
+      text-decoration-color: var(--accent);
+    }
+
+    .card p {
+      font-size: .96rem;
+      color: var(--ink-light);
+      line-height: 1.7;
+    }
+
+    /* ── Loading / error states ── */
+    .state-msg {
+      text-align: center;
+      font-family: var(--sans);
+      font-size: 14px;
+      color: var(--ink-light);
+      padding: 64px 0;
+    }
+
+    .state-msg.error {
+      color: var(--accent);
+    }
+
+    /* ── Footer ── */
+    footer {
+      border-top: 1px solid var(--rule);
+      max-width: var(--max);
+      margin: 0 auto;
+      padding: 20px 24px;
+      font-family: var(--sans);
+      font-size: 11px;
+      color: var(--ink-light);
+      display: flex;
+      justify-content: space-between;
+      flex-wrap: wrap;
+      gap: 8px;
+    }
+
+    /* ── Responsive ── */
+    @media (max-width: 540px) {
+      .masthead { padding: 20px 16px 14px; }
+      main { padding: 24px 16px 48px; }
+      .card { padding: 18px 20px; }
+      .datebar { padding: 10px 16px; }
+      footer { padding: 16px; }
+    }
+  </style>
+</head>
+<body>
+
+  <header class="masthead">
+    <p class="masthead-label">AI-Curated Press Review</p>
+    <h1>Rassegna</h1>
+    <p class="masthead-tagline">European Affairs &amp; International Politics</p>
+  </header>
+
+  <div class="datebar">
+    <span class="edition-date" id="edition-date">Loading&hellip;</span>
+    <span id="article-count"></span>
+  </div>
+
+  <main>
+    <div class="section-heading"><span>Today&rsquo;s Digest</span></div>
+    <div class="articles" id="articles">
+      <div class="state-msg" id="loading-msg">Fetching today&rsquo;s articles&hellip;</div>
+    </div>
+  </main>
+
+  <footer>
+    <span>Rassegna &mdash; Summaries are AI-generated. Always verify with the original source.</span>
+    <span id="footer-date"></span>
+  </footer>
+
+  <script>
+    const DATA_URL = 'data/rassegna.json';
+
+    function formatDate(isoStr) {
+      const [y, m, d] = isoStr.split('-').map(Number);
+      const dt = new Date(y, m - 1, d);
+      return dt.toLocaleDateString('en-GB', {
+        weekday: 'long', year: 'numeric', month: 'long', day: 'numeric'
+      });
+    }
+
+    function escapeHtml(str) {
+      return str
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;');
+    }
+
+    function renderArticles(data) {
+      const container = document.getElementById('articles');
+      const dateEl    = document.getElementById('edition-date');
+      const countEl   = document.getElementById('article-count');
+      const footerEl  = document.getElementById('footer-date');
+
+      const formatted = formatDate(data.date);
+      dateEl.textContent  = formatted;
+      footerEl.textContent = formatted;
+
+      const n = data.articles.length;
+      countEl.textContent = n === 1 ? '1 article' : `${n} articles`;
+
+      if (!n) {
+        container.innerHTML = '<div class="state-msg">No articles for today.</div>';
+        return;
+      }
+
+      container.innerHTML = data.articles.map(art => `
+        <article class="card">
+          <div class="card-meta">
+            <span class="source-badge">${escapeHtml(art.source)}</span>
+            <span class="topic-tag">${escapeHtml(art.topic)}</span>
+          </div>
+          <h2><a href="${escapeHtml(art.url)}" target="_blank" rel="noopener noreferrer">${escapeHtml(art.title)}</a></h2>
+          <p>${escapeHtml(art.summary)}</p>
+        </article>
+      `).join('');
+    }
+
+    async function load() {
+      try {
+        const res = await fetch(DATA_URL + '?t=' + Date.now());
+        if (!res.ok) throw new Error(`HTTP ${res.status}`);
+        const data = await res.json();
+        renderArticles(data);
+      } catch (err) {
+        console.error('Rassegna load error:', err);
+        document.getElementById('loading-msg')?.remove();
+        document.getElementById('articles').innerHTML =
+          '<div class="state-msg error">Could not load today&rsquo;s articles. Please try again later.</div>';
+        document.getElementById('edition-date').textContent = 'Rassegna';
+      }
+    }
+
+    load();
+  </script>
+</body>
+</html>
