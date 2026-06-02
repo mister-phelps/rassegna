@@ -67,24 +67,103 @@
       margin-top: 8px;
     }
 
-    /* ── Date bar ── */
+    /* ── Date / nav bar ── */
     .datebar {
       max-width: var(--max);
       margin: 0 auto;
       display: flex;
       align-items: center;
-      justify-content: space-between;
-      padding: 10px 24px;
+      gap: 10px;
+      padding: 8px 24px;
       border-bottom: 1px solid var(--rule);
       font-family: var(--sans);
       font-size: 12px;
-      color: var(--ink-light);
     }
 
-    .datebar .edition-date {
+    .nav-btn {
+      background: none;
+      border: 1px solid var(--rule);
+      border-radius: var(--radius);
+      color: var(--ink);
+      cursor: pointer;
+      font-size: 14px;
+      line-height: 1;
+      padding: 4px 10px;
+      transition: background .12s, border-color .12s;
+      flex-shrink: 0;
+    }
+    .nav-btn:hover:not(:disabled) {
+      background: var(--tag-bg);
+      border-color: var(--ink-light);
+    }
+    .nav-btn:disabled {
+      color: #bbb;
+      border-color: #e0d8cc;
+      cursor: default;
+    }
+
+    .date-select {
+      flex: 1;
+      font-family: var(--sans);
+      font-size: 13px;
       font-weight: 600;
       color: var(--ink);
-      font-size: 13px;
+      background: transparent;
+      border: 1px solid var(--rule);
+      border-radius: var(--radius);
+      padding: 4px 8px;
+      cursor: pointer;
+      appearance: auto;
+    }
+    .date-select:focus { outline: 2px solid var(--accent); outline-offset: 1px; }
+
+    .datebar .article-count {
+      color: var(--ink-light);
+      white-space: nowrap;
+      flex-shrink: 0;
+    }
+
+    /* ── Archive strip (shown when > 1 edition) ── */
+    .archive-bar {
+      max-width: var(--max);
+      margin: 0 auto;
+      display: none;
+      flex-wrap: wrap;
+      gap: 6px;
+      padding: 10px 24px;
+      border-bottom: 1px solid var(--rule);
+      background: var(--tag-bg);
+    }
+    .archive-bar.visible { display: flex; }
+
+    .archive-bar-label {
+      font-family: var(--sans);
+      font-size: 10px;
+      letter-spacing: .12em;
+      text-transform: uppercase;
+      color: var(--ink-light);
+      align-self: center;
+      margin-right: 4px;
+    }
+
+    .archive-chip {
+      font-family: var(--sans);
+      font-size: 11px;
+      font-weight: 600;
+      color: var(--ink-light);
+      background: var(--card);
+      border: 1px solid var(--rule);
+      border-radius: 20px;
+      padding: 3px 10px;
+      cursor: pointer;
+      transition: background .12s, color .12s, border-color .12s;
+      white-space: nowrap;
+    }
+    .archive-chip:hover { background: var(--tag-bg); border-color: var(--ink-light); }
+    .archive-chip.active {
+      background: var(--ink);
+      color: #fff;
+      border-color: var(--ink);
     }
 
     /* ── Main content ── */
@@ -94,14 +173,12 @@
       padding: 32px 24px 64px;
     }
 
-    /* ── Section heading ── */
     .section-heading {
       display: flex;
       align-items: center;
       gap: 12px;
       margin-bottom: 24px;
     }
-
     .section-heading::before,
     .section-heading::after {
       content: '';
@@ -109,7 +186,6 @@
       height: 1px;
       background: var(--rule);
     }
-
     .section-heading span {
       font-family: var(--sans);
       font-size: 10px;
@@ -120,10 +196,7 @@
     }
 
     /* ── Article cards ── */
-    .articles {
-      display: grid;
-      gap: 20px;
-    }
+    .articles { display: grid; gap: 20px; }
 
     .card {
       background: var(--card);
@@ -133,10 +206,7 @@
       padding: 24px 28px;
       transition: box-shadow .15s;
     }
-
-    .card:hover {
-      box-shadow: 0 3px 12px rgba(0,0,0,.12);
-    }
+    .card:hover { box-shadow: 0 3px 12px rgba(0,0,0,.12); }
 
     .card-meta {
       display: flex;
@@ -177,12 +247,10 @@
       line-height: 1.35;
       margin-bottom: 10px;
     }
-
     .card h2 a {
       color: inherit;
       text-decoration: none;
     }
-
     .card h2 a:hover {
       text-decoration: underline;
       text-decoration-color: var(--accent);
@@ -194,7 +262,7 @@
       line-height: 1.7;
     }
 
-    /* ── Loading / error states ── */
+    /* ── States ── */
     .state-msg {
       text-align: center;
       font-family: var(--sans);
@@ -202,10 +270,7 @@
       color: var(--ink-light);
       padding: 64px 0;
     }
-
-    .state-msg.error {
-      color: var(--accent);
-    }
+    .state-msg.error { color: var(--accent); }
 
     /* ── Footer ── */
     footer {
@@ -227,7 +292,8 @@
       .masthead { padding: 20px 16px 14px; }
       main { padding: 24px 16px 48px; }
       .card { padding: 18px 20px; }
-      .datebar { padding: 10px 16px; }
+      .datebar { padding: 8px 16px; }
+      .archive-bar { padding: 10px 16px; }
       footer { padding: 16px; }
     }
   </style>
@@ -241,12 +307,18 @@
   </header>
 
   <div class="datebar">
-    <span class="edition-date" id="edition-date">Loading&hellip;</span>
-    <span id="article-count"></span>
+    <button class="nav-btn" id="btn-prev" title="Older edition" disabled>&#8592;</button>
+    <select class="date-select" id="date-select" aria-label="Select edition"></select>
+    <button class="nav-btn" id="btn-next" title="Newer edition" disabled>&#8594;</button>
+    <span class="article-count" id="article-count"></span>
+  </div>
+
+  <div class="archive-bar" id="archive-bar">
+    <span class="archive-bar-label">Archive</span>
   </div>
 
   <main>
-    <div class="section-heading"><span>Today&rsquo;s Digest</span></div>
+    <div class="section-heading"><span id="section-label">Today&rsquo;s Digest</span></div>
     <div class="articles" id="articles">
       <div class="state-msg" id="loading-msg">Fetching today&rsquo;s articles&hellip;</div>
     </div>
@@ -258,39 +330,49 @@
   </footer>
 
   <script>
-    const DATA_URL = 'data/rassegna.json';
+    const INDEX_URL = 'data/index.json';
+
+    let dates = [];   // newest-first array of "YYYY-MM-DD" strings
+    let current = 0; // index into dates[]
 
     function formatDate(isoStr) {
       const [y, m, d] = isoStr.split('-').map(Number);
-      const dt = new Date(y, m - 1, d);
-      return dt.toLocaleDateString('en-GB', {
+      return new Date(y, m - 1, d).toLocaleDateString('en-GB', {
         weekday: 'long', year: 'numeric', month: 'long', day: 'numeric'
       });
     }
 
-    function escapeHtml(str) {
-      return str
-        .replace(/&/g, '&amp;')
-        .replace(/</g, '&lt;')
-        .replace(/>/g, '&gt;')
-        .replace(/"/g, '&quot;');
+    function escapeHtml(s) {
+      return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+    }
+
+    function updateNav() {
+      document.getElementById('btn-prev').disabled = current >= dates.length - 1;
+      document.getElementById('btn-next').disabled = current <= 0;
+      document.getElementById('date-select').value = dates[current];
+
+      // Archive chips
+      document.querySelectorAll('.archive-chip').forEach((chip, i) => {
+        chip.classList.toggle('active', i === current);
+      });
+
+      // Section label: "Today's Digest" only for the newest date
+      const label = current === 0 ? 'Today’s Digest' : 'Edition — ' + formatDate(dates[current]);
+      document.getElementById('section-label').textContent = label;
     }
 
     function renderArticles(data) {
       const container = document.getElementById('articles');
-      const dateEl    = document.getElementById('edition-date');
       const countEl   = document.getElementById('article-count');
       const footerEl  = document.getElementById('footer-date');
 
-      const formatted = formatDate(data.date);
-      dateEl.textContent  = formatted;
-      footerEl.textContent = formatted;
+      footerEl.textContent = formatDate(data.date);
 
       const n = data.articles.length;
       countEl.textContent = n === 1 ? '1 article' : `${n} articles`;
 
       if (!n) {
-        container.innerHTML = '<div class="state-msg">No articles for today.</div>';
+        container.innerHTML = '<div class="state-msg">No articles for this edition.</div>';
         return;
       }
 
@@ -306,22 +388,76 @@
       `).join('');
     }
 
-    async function load() {
+    async function loadEdition(idx) {
+      current = idx;
+      updateNav();
+
+      const container = document.getElementById('articles');
+      container.innerHTML = '<div class="state-msg">Loading&hellip;</div>';
+
       try {
-        const res = await fetch(DATA_URL + '?t=' + Date.now());
+        const res = await fetch(`data/${dates[idx]}.json?t=${Date.now()}`);
         if (!res.ok) throw new Error(`HTTP ${res.status}`);
-        const data = await res.json();
-        renderArticles(data);
+        renderArticles(await res.json());
       } catch (err) {
         console.error('Rassegna load error:', err);
-        document.getElementById('loading-msg')?.remove();
-        document.getElementById('articles').innerHTML =
-          '<div class="state-msg error">Could not load today&rsquo;s articles. Please try again later.</div>';
-        document.getElementById('edition-date').textContent = 'Rassegna';
+        container.innerHTML =
+          '<div class="state-msg error">Could not load this edition. Please try again later.</div>';
       }
     }
 
-    load();
+    function buildArchiveBar() {
+      const bar = document.getElementById('archive-bar');
+      if (dates.length <= 1) return; // hide if only one edition
+      bar.classList.add('visible');
+
+      dates.forEach((d, i) => {
+        const chip = document.createElement('button');
+        chip.className = 'archive-chip' + (i === 0 ? ' active' : '');
+        chip.textContent = d;
+        chip.addEventListener('click', () => loadEdition(i));
+        bar.appendChild(chip);
+      });
+    }
+
+    function buildSelect() {
+      const sel = document.getElementById('date-select');
+      dates.forEach(d => {
+        const opt = document.createElement('option');
+        opt.value = d;
+        opt.textContent = formatDate(d);
+        sel.appendChild(opt);
+      });
+      sel.addEventListener('change', () => {
+        loadEdition(dates.indexOf(sel.value));
+      });
+    }
+
+    async function init() {
+      try {
+        const res = await fetch(INDEX_URL + '?t=' + Date.now());
+        if (!res.ok) throw new Error(`HTTP ${res.status}`);
+        dates = await res.json();
+        if (!dates.length) throw new Error('Empty index');
+      } catch (err) {
+        console.error('Rassegna index error:', err);
+        document.getElementById('loading-msg')?.remove();
+        document.getElementById('articles').innerHTML =
+          '<div class="state-msg error">Could not load the edition index. Please try again later.</div>';
+        document.getElementById('date-select').disabled = true;
+        return;
+      }
+
+      buildSelect();
+      buildArchiveBar();
+
+      document.getElementById('btn-prev').addEventListener('click', () => loadEdition(current + 1));
+      document.getElementById('btn-next').addEventListener('click', () => loadEdition(current - 1));
+
+      loadEdition(0); // load newest
+    }
+
+    init();
   </script>
 </body>
 </html>

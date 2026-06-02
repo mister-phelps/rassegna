@@ -1,24 +1,42 @@
 # Rassegna
 
-A daily AI-curated press review focused on European affairs and international politics. Static site auto-deployed to Vercel; content is refreshed daily by an external script that commits a new `data/rassegna.json` via the GitHub REST API.
+A daily AI-curated press review focused on European affairs and international politics. Static site auto-deployed to Vercel; content is refreshed daily by an external script that commits new files via the GitHub REST API.
 
 ---
 
 ## How it works
 
-1. `index.html` fetches `data/rassegna.json` at page load and renders article cards dynamically.
-2. An external script (cron job, GitHub Action, etc.) generates a new JSON file each day and commits it to the `main` branch via the GitHub Contents API.
-3. Vercel detects the push and redeploys automatically (typically under 30 seconds).
+1. `index.html` fetches `data/index.json` at load time to discover all available editions.
+2. It defaults to the newest edition, loading `data/YYYY-MM-DD.json` for that date.
+3. A date picker, prev/next arrows, and an archive strip let readers browse past editions.
+4. An external script commits two files each day: the new dated JSON and an updated `index.json`.
+5. Vercel detects the push and redeploys automatically (typically under 30 seconds).
 
 ---
 
-## JSON schema
+## Data layout
 
-**File path in repo:** `data/rassegna.json`
+```
+data/
+  index.json          ← ordered list of all available dates (newest first)
+  2026-06-03.json     ← one file per edition
+  2026-06-04.json
+  ...
+```
+
+### `data/index.json`
+
+A JSON array of date strings, newest first:
+
+```json
+["2026-06-04", "2026-06-03", "2026-06-02"]
+```
+
+### `data/YYYY-MM-DD.json`
 
 ```json
 {
-  "date": "2026-06-03",
+  "date": "2026-06-04",
   "articles": [
     {
       "title":   "Article headline (string)",
@@ -47,47 +65,49 @@ A daily AI-curated press review focused on European affairs and international po
 
 ## How the external update script should commit
 
-Use the **GitHub Contents API** (no `git` binary required on the runner).
+Use the **GitHub Contents API** (no `git` binary required on the runner). Each day, commit **two files**: the new dated JSON and the updated `index.json`.
 
-### Endpoint
-
-```
-PUT https://api.github.com/repos/{owner}/{repo}/contents/data/rassegna.json
-```
-
-### Required details
+### Required repo details
 
 | Field | Value |
 |-------|-------|
-| **Owner** | your GitHub username |
+| **Owner** | `mister-phelps` |
 | **Repo** | `rassegna` |
-| **File path** | `data/rassegna.json` |
 | **Branch** | `main` |
+| **New edition path** | `data/YYYY-MM-DD.json` |
+| **Index path** | `data/index.json` |
+
+### Endpoint (per file)
+
+```
+PUT https://api.github.com/repos/mister-phelps/rassegna/contents/{path}
+```
 
 ### Request body
 
 ```json
 {
-  "message": "chore: daily update 2026-06-03",
-  "content": "<base64-encoded JSON string>",
-  "sha":     "<SHA of the current file — required for updates>",
+  "message": "chore: daily update 2026-06-04",
+  "content": "<base64-encoded file content>",
+  "sha":     "<current SHA of the file, required for updates; omit for new files>",
   "branch":  "main"
 }
 ```
+
+For a **new** dated file (which won't exist yet), omit `sha`. For `index.json` (which already exists), always fetch the current SHA first.
 
 ### Minimal Python example
 
 ```python
 import base64, json, os
-import urllib.request, urllib.error
+import urllib.request
 
-OWNER  = "your-github-username"
+OWNER  = "mister-phelps"
 REPO   = "rassegna"
-PATH   = "data/rassegna.json"
 BRANCH = "main"
-TOKEN  = os.environ["GITHUB_TOKEN"]   # fine-grained PAT with Contents write permission
+TOKEN  = os.environ["GITHUB_TOKEN"]  # fine-grained PAT, Contents: read+write
 
-API    = f"https://api.github.com/repos/{OWNER}/{REPO}/contents/{PATH}"
+API     = f"https://api.github.com/repos/{OWNER}/{REPO}/contents"
 HEADERS = {
     "Authorization": f"Bearer {TOKEN}",
     "Accept": "application/vnd.github+json",
@@ -95,33 +115,49 @@ HEADERS = {
     "Content-Type": "application/json",
 }
 
-def gh(method, url, body=None):
+def gh(method, path, body=None):
+    url  = f"{API}/{path}"
     data = json.dumps(body).encode() if body else None
     req  = urllib.request.Request(url, data=data, headers=HEADERS, method=method)
     with urllib.request.urlopen(req) as r:
         return json.loads(r.read())
 
-# 1. Get the current file SHA (required for PUT)
-current = gh("GET", API)
-sha = current["sha"]
+def b64(obj):
+    return base64.b64encode(
+        json.dumps(obj, ensure_ascii=False, indent=2).encode()
+    ).decode()
 
-# 2. Build new content
-new_data = {
-    "date": "2026-06-04",
+today = "2026-06-04"
+
+new_edition = {
+    "date": today,
     "articles": [
         # ... your AI-generated articles ...
     ]
 }
-encoded = base64.b64encode(json.dumps(new_data, ensure_ascii=False, indent=2).encode()).decode()
 
-# 3. Commit
-gh("PUT", API, {
-    "message": f"chore: daily update {new_data['date']}",
-    "content": encoded,
-    "sha": sha,
+# 1. Commit the new dated file (no SHA needed — file doesn't exist yet)
+gh("PUT", f"data/{today}.json", {
+    "message": f"chore: daily update {today}",
+    "content": b64(new_edition),
+    "branch":  BRANCH,
+})
+
+# 2. Fetch current index.json SHA, prepend today's date, commit
+idx_current = gh("GET", "data/index.json")
+old_dates   = json.loads(base64.b64decode(idx_current["content"]))
+new_index   = [today] + [d for d in old_dates if d != today]  # prepend, no duplicates
+
+gh("PUT", "data/index.json", {
+    "message": f"chore: update index for {today}",
+    "content": base64.b64encode(
+        json.dumps(new_index, indent=2).encode()
+    ).decode(),
+    "sha":    idx_current["sha"],
     "branch": BRANCH,
 })
-print("Committed successfully — Vercel will redeploy shortly.")
+
+print(f"Done — Vercel will redeploy shortly with {len(new_index)} editions available.")
 ```
 
 ### Required GitHub token scopes
@@ -134,10 +170,9 @@ Create a **fine-grained personal access token** (Settings → Developer settings
 
 ## Local development
 
-Open `index.html` via a local HTTP server (not `file://` — fetch won't work without CORS on some browsers):
+Open `index.html` via a local HTTP server (not `file://` — fetch won't work without one):
 
 ```bash
-# Python 3
 python -m http.server 8080
 # then open http://localhost:8080
 ```
@@ -146,4 +181,4 @@ python -m http.server 8080
 
 ## Deployment
 
-The site is deployed on [Vercel](https://vercel.com) as a static project. `vercel.json` sets a 5-minute cache on the JSON data file so repeat visitors get fast loads while still picking up the daily update promptly.
+The site is deployed on [Vercel](https://vercel.com) as a static project. `vercel.json` sets a 5-minute cache on JSON files so repeat visitors get fast loads while still picking up the daily update promptly.
