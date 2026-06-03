@@ -373,17 +373,8 @@
   </div>
 
   <script>
-    // Configure marked: open links in new tab (marked v9 renderer API)
-    marked.use({
-      gfm: true,
-      breaks: false,
-      renderer: {
-        link({ href, title, text }) {
-          const t = title ? ` title="${title}"` : '';
-          return `<a href="${href}"${t} target="_blank" rel="noopener noreferrer">${text}</a>`;
-        }
-      }
-    });
+    // Configure marked
+    marked.use({ gfm: true, breaks: false });
 
     const INDEX = 'data/index.json';
     let dates = [];
@@ -453,10 +444,10 @@
           headerEl.style.display = '';
         }
 
-        // Render body (h1 is hidden via CSS)
+        // Render body (h1 is hidden via CSS); patch all links to open in new tab
         const div = document.createElement('div');
         div.className = 'briefing-body';
-        div.innerHTML = marked.parse(md);
+        div.innerHTML = marked.parse(md).replace(/<a href=/g, '<a target="_blank" rel="noopener noreferrer" href=');
         contentEl.innerHTML = '';
         contentEl.appendChild(div);
 
