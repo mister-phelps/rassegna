@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Rassegna — Daily Briefing</title>
-  <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/marked@9/marked.min.js"></script>
   <style>
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
@@ -373,14 +373,17 @@
   </div>
 
   <script>
-    // Configure marked: open links in new tab, no mangling of email
-    const renderer = new marked.Renderer();
-    const _link = renderer.link.bind(renderer);
-    renderer.link = ({ href, title, tokens }) => {
-      const raw = _link({ href, title, tokens });
-      return raw.replace(/^<a /, '<a target="_blank" rel="noopener noreferrer" ');
-    };
-    marked.use({ renderer, gfm: true, breaks: false });
+    // Configure marked: open links in new tab (marked v9 renderer API)
+    marked.use({
+      gfm: true,
+      breaks: false,
+      renderer: {
+        link({ href, title, text }) {
+          const t = title ? ` title="${title}"` : '';
+          return `<a href="${href}"${t} target="_blank" rel="noopener noreferrer">${text}</a>`;
+        }
+      }
+    });
 
     const INDEX = 'data/index.json';
     let dates = [];
